@@ -1,0 +1,3 @@
+/home/adjux/SII_56949/workspace/build/CMakeFiles/tenis.dir
+/home/adjux/SII_56949/workspace/build/CMakeFiles/edit_cache.dir
+/home/adjux/SII_56949/workspace/build/CMakeFiles/rebuild_cache.dir
