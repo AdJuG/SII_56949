@@ -9,7 +9,7 @@ class Raqueta : public Plano
 {
 public:
 	Vector2D velocidad;
-
+        
 	Raqueta();
 	virtual ~Raqueta();
 
