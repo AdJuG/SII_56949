@@ -21,7 +21,9 @@ CMundo::CMundo()
 
 CMundo::~CMundo()
 {
-
+        if (fd_fifo >= 0) {
+        close(fd_fifo);
+    }
 }
 
 void CMundo::InitGL()
@@ -128,24 +130,56 @@ void CMundo::OnTimer(int value)
 
 	jugador1.Rebota(esfera);
 	jugador2.Rebota(esfera);
-	if(fondo_izq.Rebota(esfera))
-	{
-		esfera.centro.x=0;
-		esfera.centro.y=rand()/(float)RAND_MAX;
-		esfera.velocidad.x=2+2*rand()/(float)RAND_MAX;
-		esfera.velocidad.y=2+2*rand()/(float)RAND_MAX;
-		puntos2++;
-	}
+	
+	// Punto para el Jugador 2 (pelota rebota en el fondo izquierdo)
+    if(fondo_izq.Rebota(esfera))
+    {
+        esfera.centro.x=0;
+        esfera.centro.y=rand()/(float)RAND_MAX;
+        esfera.velocidad.x=2+2*rand()/(float)RAND_MAX;
+        esfera.velocidad.y=2+2*rand()/(float)RAND_MAX;
+        puntos2++;
 
-	if(fondo_dcho.Rebota(esfera))
-	{
-		esfera.centro.x=0;
-		esfera.centro.y=rand()/(float)RAND_MAX;
-		esfera.velocidad.x=-2-2*rand()/(float)RAND_MAX;
-		esfera.velocidad.y=-2-2*rand()/(float)RAND_MAX;
-		puntos1++;
-	}
+        // Enviar evento por la FIFO
+        struct MensajePunto msg;
+        msg.idJugador = 2;
+        msg.puntos = puntos2;
+        msg.finJuego = (puntos2 >= 3);
 
+        if (fd_fifo >= 0) {
+            write(fd_fifo, &msg, sizeof(struct MensajePunto));
+        }
+
+        // Finalizar el juego al alcanzar los 3 puntos
+        if (puntos2 >= 3) {
+            exit(0);
+        }
+    }
+
+    // Punto para el Jugador 1 (pelota rebota en el fondo derecho)
+    if(fondo_dcho.Rebota(esfera))
+    {
+        esfera.centro.x=0;
+        esfera.centro.y=rand()/(float)RAND_MAX;
+        esfera.velocidad.x=-2-2*rand()/(float)RAND_MAX;
+        esfera.velocidad.y=-2-2*rand()/(float)RAND_MAX;
+        puntos1++;
+
+        // Enviar evento por la FIFO
+        struct MensajePunto msg;
+        msg.idJugador = 1;
+        msg.puntos = puntos1;
+        msg.finJuego = (puntos1 >= 3);
+
+        if (fd_fifo >= 0) {
+            write(fd_fifo, &msg, sizeof(struct MensajePunto));
+        }
+
+        // Finalizar el juego al alcanzar los 3 puntos
+        if (puntos1 >= 3) {
+            exit(0);
+        }
+    }
 }
 
 void CMundo::OnKeyboardDown(unsigned char key, int x, int y)
@@ -164,6 +198,16 @@ void CMundo::OnKeyboardDown(unsigned char key, int x, int y)
 
 void CMundo::Init()
 {
+        // Inicialización de la tubería FIFO
+    puntos1 = 0;
+    puntos2 = 0;
+
+    fd_fifo = open("/tmp/fifo_tenis", O_WRONLY);
+    if (fd_fifo < 0) {
+        perror("[TENIS] Error al abrir la FIFO");
+    }
+    
+    
 	Plano p;
 //pared inferior
 	p.x1=-7;p.y1=-5;

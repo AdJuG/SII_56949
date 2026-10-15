@@ -1,2 +1,4 @@
 workspace/build/
+build/
+/tmp/fifo_tenis
 TOKEN

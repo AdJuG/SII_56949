@@ -14,9 +14,23 @@
 
 #include "Esfera.h"
 #include "Raqueta.h"
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
+
+struct MensajePunto {
+    int idJugador;
+    int puntos;
+    bool finJuego;
+};
 
 class CMundo  
 {
+private:
+        int fd_fifo; // Descriptor de archivo de la tubería FIFO
+        int puntos1;
+	int puntos2;
 public:
 	void Init();
 	CMundo();
@@ -34,8 +48,7 @@ public:
 	Raqueta jugador1;
 	Raqueta jugador2;
 
-	int puntos1;
-	int puntos2;
+	
 };
 
 #endif // !defined(AFX_MUNDO_H__9510340A_3D75_485F_93DC_302A43B8039A__INCLUDED_)
