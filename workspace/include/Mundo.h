@@ -7,6 +7,7 @@
 
 #include <vector>
 #include "Plano.h"
+#include "DatosMemsCompartida.h"
 
 #if _MSC_VER > 1000
 #pragma once
@@ -31,6 +32,7 @@ private:
         int fd_fifo; // Descriptor de archivo de la tubería FIFO
         int puntos1;
 	int puntos2;
+	DatosMemCompartida* pMemCompartida = nullptr;
 public:
 	void Init();
 	CMundo();

@@ -10,19 +10,27 @@
 #include <string.h>
 #include <math.h>
 
+#include <fcntl.h>
+#include <sys/mman.h>
+#include <sys/stat.h>
+#include <unistd.h>
 //////////////////////////////////////////////////////////////////////
 // Construction/Destruction
 //////////////////////////////////////////////////////////////////////
 
 CMundo::CMundo()
 {
+	pMemCompartida = nullptr;
 	Init();
 }
 
 CMundo::~CMundo()
 {
         if (fd_fifo >= 0) {
-        close(fd_fifo);
+        close(fd_fifo)  ;
+    }
+        if (pMemCompartida != nullptr && pMemCompartida != MAP_FAILED) {
+        munmap(pMemCompartida, sizeof(DatosMemCompartida));
     }
 }
 
@@ -131,6 +139,23 @@ void CMundo::OnTimer(int value)
 	jugador1.Rebota(esfera);
 	jugador2.Rebota(esfera);
 	
+	
+	//Memoria Compartida para comunicación con el BOT
+	if (pMemCompartida != nullptr && pMemCompartida != MAP_FAILED) {
+        // 1. Exportar la posición actual de pelota y raqueta1
+        pMemCompartida->esfera = esfera;
+        pMemCompartida->raqueta1 = jugador1;
+
+        // 2. Leer la acción decidida por el Bot
+        if (pMemCompartida->accion == 1) {
+            OnKeyboardDown('w', 0, 0); // Mover arriba
+        } else if (pMemCompartida->accion == -1) {
+            OnKeyboardDown('s', 0, 0); // Mover abajo
+        } else if (pMemCompartida->accion == 0) {
+            jugador1.velocidad.y = 0;   // Parar
+        }
+    }
+    
 	// Punto para el Jugador 2 (pelota rebota en el fondo izquierdo)
     if(fondo_izq.Rebota(esfera))
     {
@@ -207,6 +232,31 @@ void CMundo::Init()
         perror("[TENIS] Error al abrir la FIFO");
     }
     
+   // Archivo Proyectado en Memoria
+    int fd_mem = open("/tmp/memoria_tenis", O_RDWR | O_CREAT | O_TRUNC, 0666);
+    if (fd_mem < 0) {
+        perror("[TENIS] Error al crear/abrir el archivo proyectado");
+    } else {
+        // Fijar el tamaño exacto del archivo al tamaño de la estructura
+        if (ftruncate(fd_mem, sizeof(DatosMemCompartida)) == -1) {
+            perror("[TENIS] Error en ftruncate");
+            close(fd_mem);
+        } else {
+            // Proyectar el archivo en el espacio de direcciones de memoria
+            pMemCompartida = (DatosMemCompartida*) mmap(NULL,sizeof(DatosMemCompartida),PROT_READ | PROT_WRITE,MAP_SHARED,fd_mem,0);
+
+            if (pMemCompartida == MAP_FAILED) {
+                perror("[TENIS] Error en mmap");
+                pMemCompartida = nullptr;
+            } else {
+                // Inicialización de campos en la región compartida
+                pMemCompartida->accion = 0;
+            }
+            
+            // Cerrar descriptor
+            close(fd_mem);
+        }
+    }
     
 	Plano p;
 //pared inferior

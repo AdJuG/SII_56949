@@ -17,3 +17,7 @@ TARGET_LINK_LIBRARIES(tenis glut GL GLU)
 
 # Nuevo Logger (Práctica 2)
 ADD_EXECUTABLE(logger src/logger.cpp)
+
+# Programa bot para la Práctica 3
+add_executable(bot src/bot.cpp)
+target_include_directories(bot PRIVATE include)
